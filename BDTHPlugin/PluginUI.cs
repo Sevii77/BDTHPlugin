@@ -68,7 +68,6 @@ namespace BDTHPlugin
     private bool dummyInventory;
     private bool autoVisible;
 
-    private readonly Vector4 ORANGE_COLOR = new(0.871f, 0.518f, 0f, 1f);
     private readonly Vector4 RED_COLOR = new Vector4(1, 0, 0, 1);
 
     public PluginUI()
@@ -122,9 +121,6 @@ namespace BDTHPlugin
       if (!Visible)
         return;
 
-      ImGui.PushStyleColor(ImGuiCol.TitleBgActive, ORANGE_COLOR);
-      ImGui.PushStyleColor(ImGuiCol.CheckMark, ORANGE_COLOR);
-
       try
       {
         DrawWindowContents();
@@ -132,8 +128,6 @@ namespace BDTHPlugin
       catch
       {
       }
-
-      ImGui.PopStyleColor(2);
     }
 
     private unsafe void DrawWindowContents()
@@ -205,6 +199,9 @@ namespace BDTHPlugin
         {
           DrawError("Select a housing item in Rotate mode");
           ImGuiComponents.HelpMarker("Are you doing everything right? Try using the /bdth debug command and report this issue in Discord!");
+          DrawInputCoord("x coord##bdth-x", ref memory.position.X, ref lockX, true);
+          DrawInputCoord("y coord##bdth-y", ref memory.position.Y, ref lockY, true);
+          DrawInputCoord("z coord##bdth-z", ref memory.position.Z, ref lockZ, true);
         }
         else
           DrawItemControls();
@@ -279,31 +276,31 @@ namespace BDTHPlugin
         memory.WriteRotation(memory.rotation);
     }
     
-    private unsafe bool DrawInput(string name, ref float f)
+    private unsafe bool DrawInput(string name, ref float f, bool nowrite = false)
     {
-      var changed = ImGui.InputFloat(name, ref f, drag);
+      var changed = ImGui.InputFloat(name, ref f, drag, 0f, "%.3f", nowrite ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None);
       HandleScrollInput(ref f);
       ImGui.SameLine();
       return changed;
     }
     
-    private unsafe void DrawInputCoord(string name, ref float f)
+    private unsafe void DrawInputCoord(string name, ref float f, bool nowrite = false)
     {
-      if (DrawInput(name, ref f))
+      if (DrawInput(name, ref f, nowrite))
         memory.WritePosition(memory.position);
     }
 
-    private unsafe void DrawInputRotate(string name, ref float f)
+    private unsafe void DrawInputRotate(string name, ref float f, bool nowrite = false)
     {
-      if (DrawInput(name, ref f))
+      if (DrawInput(name, ref f, nowrite))
         memory.WriteRotation(memory.rotation);
     }
 
-    private unsafe void DrawInputCoord(string name, ref float f, ref float? locked)
+    private unsafe void DrawInputCoord(string name, ref float f, ref float? locked, bool nowrite = false)
     {
-      DrawInputCoord(name, ref f);
+      DrawInputCoord(name, ref f, nowrite);
       if (ImGuiComponents.IconButton((int)ImGui.GetID(name), locked == null ? Dalamud.Interface.FontAwesomeIcon.Unlock : Dalamud.Interface.FontAwesomeIcon.Lock))
-        locked = locked == null ? f : null;
+        locked = (locked == null && !nowrite) ? f : null;
     }
 
     private unsafe void DrawItemControls()
@@ -473,9 +470,6 @@ namespace BDTHPlugin
         return;
       }
 
-      ImGui.PushStyleColor(ImGuiCol.TitleBgActive, ORANGE_COLOR);
-      ImGui.PushStyleColor(ImGuiCol.CheckMark, ORANGE_COLOR);
-
       var fontScale = ImGui.GetIO().FontGlobalScale;
       var size = new Vector2(240 * fontScale, 350 * fontScale);
 
@@ -591,7 +585,6 @@ namespace BDTHPlugin
         renderCount++;
 
       ImGui.End();
-      ImGui.PopStyleColor(2);
     }
 
     // Bypass the delta matrix to just only use snap.
